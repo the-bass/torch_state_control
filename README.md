@@ -49,7 +49,7 @@ class SuperSimpleStatefulNet(StatefulModule):
         return self.fc(x)
 ```
 Note, that you need to pass a unique identifier for the model to `super().__init__(identifier)`, so the data that gets stored can be labeled appropriately.
-Apart from this the `StatefulModule` class provides all the functionality `torch.nn.Module`s do *plus* a few methods that let you manage the state of your module easily. Thus, you can now
+Apart from this the `StatefulModule` class provides all the functionality `torch.nn.Module`s do *plus* a few methods that let you manage the state of your network easily. Thus, you can now
 
  ```py
 net = SuperSimpleStatefulNet()
