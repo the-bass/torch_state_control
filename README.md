@@ -67,7 +67,7 @@ You can also store additional information when saving a checkpoint, like
 
 ```py
 net.save_checkpoint(
-	train_set_performance=1.23,
+    train_set_performance=1.23,
     dev_set_performance=2.34,
     losses_since_last_checkpoint=[1.23, 2.34, 3.45], # Losses for each epoch trained since last checkpoint
     notes='ADAM lr=1.23' # Use this to keep track of what learning rate you have used etc.
