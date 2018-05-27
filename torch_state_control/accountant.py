@@ -78,8 +78,8 @@ class Accountant:
         id = load_int(csv_row['id'])
         notes = csv_row['notes']
         previous_checkpoint = load_int(csv_row['previous_checkpoint'])
-        train_set_performance = load_float(csv_row['train_set_performance'])
-        dev_set_performance = load_float(csv_row['dev_set_performance'])
+        train_set_performance = csv_row['train_set_performance']
+        dev_set_performance = csv_row['dev_set_performance']
         created_at = load_datetime(csv_row['created_at'])
         state_dict = self.__fetch_data__(NETWORK_PARAMETERS_SUBDIRECTORY, id)
         losses_since_last_checkpoint = self.__fetch_data__(LOSSES_SUBDIRECTORY, id)
@@ -102,9 +102,9 @@ class Accountant:
         parameters.pop('state_dict')
         parameters.pop('losses_since_last_checkpoint')
 
-        if not parameters['train_set_performance'] or math.isnan(parameters['train_set_performance']):
+        if not parameters['train_set_performance']:
             parameters['train_set_performance'] = ''
-        if not parameters['dev_set_performance'] or math.isnan(parameters['dev_set_performance']):
+        if not parameters['dev_set_performance']:
             parameters['dev_set_performance'] = ''
 
         with open(location, 'a') as csv_file:

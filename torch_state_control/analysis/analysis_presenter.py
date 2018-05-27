@@ -101,6 +101,10 @@ class AnalysisPresenter:
 
     def plot_performances(self, checkpoint=None, show=True):
         train_set_performances, dev_set_performances = self.analyst.performances(checkpoint)
+        # Expect the performances to be single floats for this graph.
+        train_set_performances = [float(perf) for perf in train_set_performances]
+        dev_set_performances = [float(perf) for perf in dev_set_performances]
+
         losses = self.analyst.losses(checkpoint)
 
         x_train = list(range(len(train_set_performances)))

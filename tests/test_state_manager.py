@@ -90,8 +90,8 @@ class TestStateManager(unittest.TestCase):
         net.state_dict()['fc.weight'].copy_(new_weight)
 
         meta_data = {
-            'train_set_performance': 1.23,
-            'dev_set_performance': 2.34,
+            'train_set_performance': '1.23',
+            'dev_set_performance': '1|2|3',
             'losses_since_last_checkpoint': [1.23, 2.34, 3.45],
             'notes': 'Learning rate: 1.23'
         }
