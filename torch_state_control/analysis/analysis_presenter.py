@@ -6,6 +6,8 @@ from .analyst import Analyst
 
 class AnalysisPresenter:
 
+    PLOT_SIZE = 4
+
     def __init__(self, name, directory=None):
         self.analyst = Analyst(name, directory)
 
@@ -26,49 +28,154 @@ class AnalysisPresenter:
     #
     #     return losses
 
-    # def plot_losses(self, checkpoint_id=None, show=True):
-    #     records = self.__records__(checkpoint_id)
-    #     losses = self.losses(records)
-    #
-    #     x_axis = list(range(len(losses)))
-    #     y_axis = losses
-    #
-    #     # Plots.
-    #     shared_plot_options = {
-    #         'linestyle': 'solid',
-    #         'marker': 'None',
-    #         'markersize': 4
-    #     }
-    #     s = plt.plot(
-    #         x_axis,
-    #         y_axis,
-    #         color='#00A6FB',
-    #         label='Train set',
-    #         **shared_plot_options
-    #     )
-    #
-    #     # Fillings.
-    #     # plt.fill_between(
-    #     #     x_dev,
-    #     #     0,
-    #     #     y_dev,
-    #     #     color='#00A6FB',
-    #     #     alpha=1
-    #     # )
-    #
-    #     # s.yaxis.tick_right()
-    #
-    #     # Labels.
-    #     plt.xlabel('Epochs')
-    #     plt.ylabel("Loss")
-    #
-    #     # plt.ylim(ymax=0.0003, ymin=0)
-    #     plt.title(f"Loss development over {len(losses)} epochs")
-    #     plt.legend(loc='upper right')
-    #
-    #     if show:
-    #         plt.show()
-    #
+    def plot_loss(self, checkpoint=None, show=True):
+        if show:
+            grid = (1, 1)
+            fig_width = 2 * self.PLOT_SIZE
+            fig_height = grid[0] * self.PLOT_SIZE
+            plt.figure(num=0, figsize=(fig_width, fig_height))
+
+            plt.subplot(*grid, 1)
+
+        losses = self.analyst.losses(checkpoint)
+
+        x_axis = list(range(len(losses)))
+        y_axis = losses
+
+        conditional_plot_options = {
+            'marker': '|'
+        }
+        if len(losses) > 150:
+            conditional_plot_options['marker'] = 'None'
+
+        plt.plot(
+            x_axis,
+            y_axis,
+            color='#04151F',
+            # label='Train set',
+            linestyle='solid',
+            markersize=4,
+            **conditional_plot_options
+        )
+
+        # Labels.
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+
+        # plt.ylim(ymax=0.0003, ymin=0)
+        plt.title(f"Loss development over {len(losses)} epochs")
+        # plt.legend(loc='upper right')
+
+        if show:
+            plt.tight_layout()
+            plt.show()
+
+    def plot_confusions(self, checkpoint=None, show=True):
+        if show:
+            grid = (2, 1)
+            fig_width = 2 * self.PLOT_SIZE
+            fig_height = grid[0] * self.PLOT_SIZE
+            plt.figure(num=0, figsize=(fig_width, fig_height))
+
+            plt.subplot(*grid, 1)
+
+        train_set_confusions, dev_set_confusions = self.analyst.confusions(checkpoint)
+
+        amount_of_recognized_frauds_train = [1 - tp / (tp + fn) for tp, fp, tn, fn in train_set_confusions]
+        amount_of_recognized_frauds_dev = [1 - tp / (tp + fn) for tp, fp, tn, fn in dev_set_confusions]
+
+        # Plots.
+        shared_plot_options = {
+            'linestyle': 'None',
+            'marker': '|',
+            'markersize': 4
+        }
+        plt.plot(
+            amount_of_recognized_frauds_dev,
+            color='#52EF2B',
+            label=f"Dev set - {amount_of_recognized_frauds_dev[-1]*100:.2f}%",
+            **shared_plot_options
+        )
+        plt.plot(
+            amount_of_recognized_frauds_train,
+            color='#0AD6FF',
+            label=f"Train set - {amount_of_recognized_frauds_train[-1]*100:.2f}%",
+            **shared_plot_options
+        )
+
+        # Fillings.
+        plt.fill_between(
+            list(range(len(amount_of_recognized_frauds_dev))),
+            0,
+            amount_of_recognized_frauds_dev,
+            color='#52EF2B',
+            alpha=1
+        )
+        plt.fill_between(
+            list(range(len(amount_of_recognized_frauds_train))),
+            0,
+            amount_of_recognized_frauds_train,
+            color='#0AD6FF',
+            alpha=0.95
+        )
+
+        # Labels.
+        plt.xlabel("Checkpoints")
+        plt.ylabel("Amount in %")
+        plt.title(f"Unidentified Positives over {len(train_set_confusions)} checkpoints")
+        plt.legend(loc='best')
+
+        if show:
+            plt.subplot(*grid, 2)
+
+        amount_of_falsley_accused_train = [fp / (fp + tn) for tp, fp, tn, fn in train_set_confusions]
+        amount_of_falsley_accused_dev = [fp / (fp + tn) for tp, fp, tn, fn in dev_set_confusions]
+
+        # Plots.
+        shared_plot_options = {
+            'linestyle': 'None',
+            'marker': '|',
+            'markersize': 4
+        }
+        plt.plot(
+            amount_of_falsley_accused_dev,
+            color='#F42A13',
+            label=f"Dev set - {amount_of_falsley_accused_dev[-1]*100:.2f}%",
+            **shared_plot_options
+        )
+        plt.plot(
+            amount_of_falsley_accused_train,
+            color='#211E1D',
+            label=f"Train set - {amount_of_falsley_accused_train[-1]*100:.2f}%",
+            **shared_plot_options
+        )
+
+        # Fillings.
+        plt.fill_between(
+            list(range(len(amount_of_falsley_accused_dev))),
+            0,
+            amount_of_falsley_accused_dev,
+            color='#F42A13',
+            alpha=1
+        )
+        plt.fill_between(
+            list(range(len(amount_of_falsley_accused_train))),
+            0,
+            amount_of_falsley_accused_train,
+            color='#211E1D',
+            alpha=0.95
+        )
+
+        # Labels.
+        plt.xlabel("Checkpoints")
+        plt.ylabel("Amount in %")
+        plt.title(f"Falsely accused over {len(train_set_confusions)} checkpoints")
+        plt.legend(loc='best')
+
+        if show:
+            plt.tight_layout()
+            plt.show()
+
     # def plot_current_performance(self, checkpoint_id=None, show=True):
     #     records = self.__records__(checkpoint_id)
     #     record = records[-1]
@@ -100,6 +207,14 @@ class AnalysisPresenter:
     #         plt.show()
 
     def plot_performances(self, checkpoint=None, show=True):
+        if show:
+            grid = (1, 1)
+            fig_width = 2 * self.PLOT_SIZE
+            fig_height = grid[0] * self.PLOT_SIZE
+            plt.figure(num=0, figsize=(fig_width, fig_height))
+
+            plt.subplot(*grid, 1)
+
         train_set_performances, dev_set_performances = self.analyst.performances(checkpoint)
         # Expect the performances to be single floats for this graph.
         train_set_performances = [float(perf) for perf in train_set_performances]
@@ -164,6 +279,7 @@ class AnalysisPresenter:
         plt.legend(loc='upper right')
 
         if show:
+            plt.tight_layout()
             plt.show()
 
     def plot_changelog(self, checkpoint=None):
@@ -193,6 +309,7 @@ class AnalysisPresenter:
         # sp.set_aspect('equal')
         sp = plt.subplot(*grid, 3)
         self.plot_performances(checkpoint, show=False)
+        # self.plot_loss(checkpoint, show=False)
 
 
 
