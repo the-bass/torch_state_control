@@ -132,7 +132,7 @@ class Accountant:
         load_options = {}
 
         if self.all_onto_cpu:
-            load_options['map_location'] = lambda storage, loc: storage
+            load_options['map_location'] = {'cuda:0': 'cpu'}
 
         return torch.load(location, **load_options)
 
