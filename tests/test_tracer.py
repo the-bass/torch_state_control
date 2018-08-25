@@ -22,8 +22,8 @@ class TestTracer(unittest.TestCase):
 
     def test_history(self):
         # Initialize.
-        net = SuperSimpleNet()
-        manager = StateManager(net=net, name='simple_net', directory=self.test_dir)
+        module = SuperSimpleNet()
+        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
 
         # Create a few checkpoints.
         manager.save()
@@ -31,8 +31,8 @@ class TestTracer(unittest.TestCase):
         manager.save()
 
         # Reset.
-        net = SuperSimpleNet()
-        manager = StateManager(net=net, name='simple_net', directory=self.test_dir)
+        module = SuperSimpleNet()
+        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
 
         # Load second checkpoint.
         manager.load(1)

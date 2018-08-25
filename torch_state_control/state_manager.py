@@ -8,8 +8,8 @@ from .accountant import Accountant
 
 class StateManager:
 
-    def __init__(self, net, name, directory=None, all_onto_cpu=False):
-        self.net = net
+    def __init__(self, module, name, directory=None, all_onto_cpu=False):
+        self.module = module
         self.name = name
         if directory:
             self.storage_directory = directory
@@ -30,7 +30,7 @@ class StateManager:
 
     def __load_checkpoint__(self, record):
         self.latest_checkpoint = record
-        self.net.load_state_dict(record.state_dict)
+        self.module.load_state_dict(record.state_dict)
 
         return record
 
@@ -43,7 +43,7 @@ class StateManager:
     def save(self, train_set_performance=None, dev_set_performance=None, losses_since_last_checkpoint=None, notes=None):
         self.__ensure_directory_exists__(self.storage_directory)
 
-        state_dict = self.net.state_dict()
+        state_dict = self.module.state_dict()
         previous_checkpoint = self.latest_checkpoint.id if self.latest_checkpoint else None
 
         new_record = self.accountant.new_record(

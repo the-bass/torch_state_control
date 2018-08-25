@@ -9,7 +9,7 @@ class StatefulModule(nn.Module):
 
         self.name = name
         self.state_manager = StateManager(
-            net=self,
+            module=self,
             name=self.name,
             directory=directory,
             all_onto_cpu=all_onto_cpu
