@@ -19,10 +19,10 @@ class TestStateManager(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(TEST_TMP_DIRECTORY)
 
-    def test_save_and_load(self):
+    def test_save_load_and_load_latest(self):
         # Initialize.
         module = SuperSimpleNet()
-        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
+        manager = StateManager(module=module, directory=self.test_dir)
 
         # Update the weight.
         new_weight = torch.Tensor([[1, 1]])
@@ -33,7 +33,7 @@ class TestStateManager(unittest.TestCase):
 
         # Reset module.
         module = SuperSimpleNet()
-        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
+        manager = StateManager(module=module, directory=self.test_dir)
 
         # Before loading a checkpoint, the weights should be reset.
         current_weight = module.state_dict()['fc.weight']
@@ -75,7 +75,7 @@ class TestStateManager(unittest.TestCase):
     def test_exception_raised_when_load_id_not_exists(self):
         # Initialize.
         module = SuperSimpleNet()
-        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
+        manager = StateManager(module=module, directory=self.test_dir)
 
         with self.assertRaisesRegex(Exception, 'Record .* not exist') as cm:
             manager.load(1)
@@ -83,7 +83,7 @@ class TestStateManager(unittest.TestCase):
     def test_saving_meta_data(self):
         # Initialize.
         module = SuperSimpleNet()
-        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
+        manager = StateManager(module=module, directory=self.test_dir)
 
         # Update the weight.
         new_weight = torch.Tensor([[1, 1]])

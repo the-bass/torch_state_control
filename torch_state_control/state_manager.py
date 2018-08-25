@@ -8,9 +8,9 @@ from .accountant import Accountant
 
 class StateManager:
 
-    def __init__(self, module, name, directory=None, all_onto_cpu=False):
+    def __init__(self, module, name=None, directory=None, all_onto_cpu=False):
         self.module = module
-        self.name = name
+        self.name = name if name else type(module).__name__
         if directory:
             self.storage_directory = directory
         else:
