@@ -2,7 +2,7 @@
 
 A network parameter versioning module for *PyTorch*.
 
- ```py
+```py
 net = CustomizedLeNet5()
 
 # Load latest network parameters.
@@ -12,14 +12,14 @@ net.load_latest_checkpoint()
 
 # Save current parameters.
 net.save_checkpoint()
- ```
+```
 
 #### Features
 
 - Save the current parameters of your network
 - Keep a history of your network's states
 - Load the latest parameters or jump back to an earlier version
-- *Optional:* Save additional meta data such as performance along with the network parameters and make use of the included plotting methods to analyse the training process
+- Save notes in form of a dictionary along with your parameters containing, for example, performance on dev set or whatever
 
 #### Not stable
 
@@ -41,15 +41,14 @@ from torch_state_control.nn import StatefulModule
 class SuperSimpleStatefulNet(StatefulModule):
 
     def __init__(self):
-        super().__init__("SuperSimpleStatefulNet")
+        super().__init__()
 
         self.fc = nn.Linear(2, 1)
 
     def forward(self, x):
         return self.fc(x)
 ```
-Note, that you need to pass a unique identifier for the model to `super().__init__(identifier)`, so the data that gets stored can be labeled appropriately.
-Apart from this the `StatefulModule` class provides all the functionality `torch.nn.Module`s do *plus* a few methods that let you manage the state of your network easily. Thus, you can now
+The `StatefulModule` class provides all the functionality `torch.nn.Module`s do *plus* a few methods that let you manage the state of your network easily. Thus, you can now
 
  ```py
 net = SuperSimpleStatefulNet()
@@ -69,21 +68,10 @@ You can also store additional information when saving a checkpoint, like
 net.save_checkpoint(
     train_set_performance=1.23,
     dev_set_performance=2.34,
-    losses_since_last_checkpoint=[1.23, 2.34, 3.45], # Losses for each epoch trained since last checkpoint
-    notes='ADAM lr=1.23' # Use this to keep track of what learning rate you have used etc.
+    losses_since_last_checkpoint=[1.23, 2.34, 3.45],
+    learning_rate=1.23
 )
 ```
-
-That way you can later use the included methods to plot the development of the performance over the past checkpoints:
-
-```py
-from torch_state_control.analysis import AnalysisPresenter
-
-analysis_presenter = AnalysisPresenter(name=network.name)
-analysis_presenter.plot_analysis()
-```
-
-![alt text](./performance_plot_example.png)
 
 In case you decide you want to go back to the checkpoint with id `9`, you can load the parameters used at that time using
 

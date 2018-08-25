@@ -2,23 +2,29 @@ import os
 import glob
 import torch
 
-from .constants import NETWORK_PARAMETERS_SUBDIRECTORY, STATE_CONTROL_DIRECTORY
+from .constants import STATE_DICTS_SUBDIRECTORY, STATE_CONTROL_DIRECTORY
 from .accountant import Accountant
+from .torch_storeman import TorchStoreman
 
 
 class StateManager:
+    """ Manages different values of a PyTorch module's parameters. """
 
-    def __init__(self, module, name=None, directory=None, all_onto_cpu=False):
+    def __init__(self, module, name=None, directory=None, load_onto_cpu=False):
         self.module = module
+
+        # Default the ´name´ to the name of the class the given module is an
+        # instance of.
         self.name = name if name else type(module).__name__
-        if directory:
-            self.storage_directory = directory
-        else:
-            self.storage_directory = os.path.join(STATE_CONTROL_DIRECTORY, name)
-        self.accountant = Accountant(
-            directory=self.storage_directory,
-            all_onto_cpu=all_onto_cpu
-        )
+
+        # Use the default directory if no directory is given.
+        self.storage_directory = directory if directory else os.path.join(STATE_CONTROL_DIRECTORY, self.name)
+        self.state_dicts_directory = os.path.join(self.storage_directory, STATE_DICTS_SUBDIRECTORY)
+
+        self.accountant = Accountant(directory=self.storage_directory)
+        self.state_dict_storeman = TorchStoreman(
+            directory=self.state_dicts_directory,
+            load_onto_cpu=load_onto_cpu)
         self.latest_checkpoint = None
 
     def __getitem__(self, index):
@@ -29,30 +35,34 @@ class StateManager:
         return len(self.accountant)
 
     def __load_checkpoint__(self, record):
+        state_dict = self.state_dict_storeman.fetch(record.state_dict_storage_id)
+        self.module.load_state_dict(state_dict)
         self.latest_checkpoint = record
-        self.module.load_state_dict(record.state_dict)
 
         return record
 
-    def __ensure_directory_exists__(self, directory):
+    @staticmethod
+    def __ensure_directory_exists__(directory):
         if os.path.exists(directory):
             return
 
         os.makedirs(directory)
 
-    def save(self, train_set_performance=None, dev_set_performance=None, losses_since_last_checkpoint=None, notes=None):
+    def __ensure_directories_exist__(self):
         self.__ensure_directory_exists__(self.storage_directory)
+        self.__ensure_directory_exists__(self.state_dicts_directory)
 
-        state_dict = self.module.state_dict()
-        previous_checkpoint = self.latest_checkpoint.id if self.latest_checkpoint else None
+    def save(self, notes=None):
+        self.__ensure_directories_exist__()
+
+        id_of_previous_checkpoint = self.latest_checkpoint.id if self.latest_checkpoint else None
+        current_state_dict = self.module.state_dict()
+        state_dict_storage_id = self.state_dict_storeman.store(current_state_dict)
 
         new_record = self.accountant.new_record(
-            notes=notes,
-            state_dict=state_dict,
-            previous_checkpoint=previous_checkpoint,
-            train_set_performance=train_set_performance,
-            dev_set_performance=dev_set_performance,
-            losses_since_last_checkpoint=losses_since_last_checkpoint
+            id_of_previous_checkpoint=id_of_previous_checkpoint,
+            state_dict_storage_id=state_dict_storage_id,
+            notes=notes
         )
 
         self.latest_checkpoint = new_record

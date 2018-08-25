@@ -6,7 +6,7 @@ import torch
 import datetime
 
 from torch_state_control import StateManager
-from torch_state_control.analysis.tracer import Tracer
+from torch_state_control.tracer import Tracer
 from fixtures.super_simple_net import SuperSimpleNet
 import constants
 

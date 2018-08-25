@@ -1,20 +1,20 @@
 import os
 
-from ..accountant import Accountant
+from .accountant import Accountant
 
 
 class Tracer:
     def __init__(self, directory):
         self.directory = directory
-        self.accountant = Accountant(directory=self.directory, all_onto_cpu=False)
+        self.accountant = Accountant(directory=self.directory)
 
     def __prepend_previous_records__(self, array):
-        previous_record_id = array[0].previous_checkpoint
+        id_of_previous_checkpoint = array[0].id_of_previous_checkpoint
 
-        if previous_record_id == None:
+        if id_of_previous_checkpoint == None:
             return array
 
-        previous_record = self.accountant.record_by_id(previous_record_id)
+        previous_record = self.accountant.record_by_id(id_of_previous_checkpoint)
         array.insert(0, previous_record)
 
         return self.__prepend_previous_records__(array)

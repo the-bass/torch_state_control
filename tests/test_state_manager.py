@@ -80,52 +80,30 @@ class TestStateManager(unittest.TestCase):
         with self.assertRaisesRegex(Exception, 'Record .* not exist') as cm:
             manager.load(1)
 
-    def test_saving_meta_data(self):
+    def test_saving_notes(self):
         # Initialize.
         module = SuperSimpleNet()
         manager = StateManager(module=module, directory=self.test_dir)
 
-        # Update the weight.
-        new_weight = torch.Tensor([[1, 1]])
-        module.state_dict()['fc.weight'].copy_(new_weight)
-
-        meta_data = {
-            'train_set_performance': '1.23',
+        notes = {
+            'train_set_performance': 1.23,
             'dev_set_performance': '1|2|3',
             'losses_since_last_checkpoint': [1.23, 2.34, 3.45],
-            'notes': 'Learning rate: 1.23'
+            'hist': 'Learning rate: 1.23'
         }
 
         # Create a checkpoint.
-        manager.save(**meta_data)
+        manager.save(notes=notes)
 
         # Reload.
         module = SuperSimpleNet()
-        manager = StateManager(module=module, name='simple_net', directory=self.test_dir)
+        manager = StateManager(module=module, directory=self.test_dir)
 
         # Load the latest checkpoint.
         checkpoint = manager.load_latest()
 
         # Check that the additional data can be accessed.
-        self.assertEqual(checkpoint.id, 0)
-        assert(isinstance(checkpoint.created_at, datetime.datetime))
-        self.assertLess((datetime.datetime.utcnow() - checkpoint.created_at).seconds, 1)
-        self.assertEqual(
-            checkpoint.train_set_performance,
-            meta_data['train_set_performance']
-        )
-        self.assertEqual(
-            checkpoint.dev_set_performance,
-            meta_data['dev_set_performance']
-        )
-        self.assertEqual(
-            checkpoint.notes,
-            meta_data['notes']
-        )
-        self.assertEqual(
-            checkpoint.losses_since_last_checkpoint,
-            meta_data['losses_since_last_checkpoint']
-        )
+        self.assertEqual(checkpoint.notes, notes)
 
 if __name__ == '__main__':
     unittest.main()

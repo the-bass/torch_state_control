@@ -4,15 +4,14 @@ from ..state_manager import StateManager
 
 class StatefulModule(nn.Module):
 
-    def __init__(self, name, directory=None, all_onto_cpu=False):
+    def __init__(self, name=None, directory=None, load_onto_cpu=False):
         super().__init__()
 
-        self.name = name
         self.state_manager = StateManager(
             module=self,
-            name=self.name,
+            name=name,
             directory=directory,
-            all_onto_cpu=all_onto_cpu
+            load_onto_cpu=load_onto_cpu
         )
 
     def save_checkpoint(self, *args, **kwargs):

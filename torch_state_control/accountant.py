@@ -3,19 +3,18 @@ import csv
 import datetime
 import math
 import torch
+import json
 
 from .record import Record
-from .constants import ACCOUNT_BOOK, NETWORK_PARAMETERS_SUBDIRECTORY, LOSSES_SUBDIRECTORY
+from .constants import ACCOUNT_BOOK
 
 
 class Accountant:
-
     DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S.%f'
-    CSV_FIELDS = ['id', 'previous_checkpoint', 'train_set_performance', 'dev_set_performance', 'created_at', 'notes']
+    CSV_FIELDS = ['id', 'id_of_previous_checkpoint', 'state_dict_storage_id', 'created_at', 'notes']
 
-    def __init__(self, directory, all_onto_cpu):
+    def __init__(self, directory):
         self.directory = directory
-        self.all_onto_cpu = all_onto_cpu
         self.account_book = os.path.join(self.directory, ACCOUNT_BOOK)
         self.__refresh_list__()
 
@@ -25,7 +24,15 @@ class Accountant:
     def __len__(self):
         return len(self.list)
 
+    def __refresh_list__(self):
+        self.list = self.__load_list__()
+
+    def __account_book_exists__(self):
+        return os.path.exists(self.account_book)
+
     def __load_list__(self):
+        """ Reads the account book if it exists. """
+
         dict_list = []
 
         if not self.__account_book_exists__():
@@ -38,12 +45,6 @@ class Accountant:
                 dict_list.append(record)
 
         return dict_list
-
-    def __refresh_list__(self):
-        self.list = self.__load_list__()
-
-    def __account_book_exists__(self):
-        return os.path.exists(self.account_book)
 
     def __ensure_account_book_exists__(self):
         if self.__account_book_exists__():
@@ -63,12 +64,6 @@ class Accountant:
 
             return int(csv_value)
 
-        def load_float(csv_value):
-            if csv_value == '':
-                return None
-
-            return float(csv_value)
-
         def load_datetime(csv_value):
             if csv_value == '':
                 return None
@@ -76,21 +71,15 @@ class Accountant:
             return datetime.datetime.strptime(csv_value, self.DATETIME_FORMAT)
 
         id = load_int(csv_row['id'])
-        notes = csv_row['notes']
-        previous_checkpoint = load_int(csv_row['previous_checkpoint'])
-        train_set_performance = csv_row['train_set_performance']
-        dev_set_performance = csv_row['dev_set_performance']
+        id_of_previous_checkpoint = load_int(csv_row['id_of_previous_checkpoint'])
+        state_dict_storage_id = load_int(csv_row['state_dict_storage_id'])
+        notes = json.loads(csv_row['notes'])
         created_at = load_datetime(csv_row['created_at'])
-        state_dict = self.__fetch_data__(NETWORK_PARAMETERS_SUBDIRECTORY, id)
-        losses_since_last_checkpoint = self.__fetch_data__(LOSSES_SUBDIRECTORY, id)
 
         return Record(
             id=id,
-            previous_checkpoint=previous_checkpoint,
-            state_dict=state_dict,
-            train_set_performance=train_set_performance,
-            dev_set_performance=dev_set_performance,
-            losses_since_last_checkpoint=losses_since_last_checkpoint,
+            id_of_previous_checkpoint=id_of_previous_checkpoint,
+            state_dict_storage_id=state_dict_storage_id,
             notes=notes,
             created_at=created_at
         )
@@ -98,43 +87,14 @@ class Accountant:
     def __append_record__(self, record, location):
         parameters = record.__dict__.copy()
         parameters['created_at'] = parameters['created_at'].strftime(self.DATETIME_FORMAT)
-
-        parameters.pop('state_dict')
-        parameters.pop('losses_since_last_checkpoint')
-
-        if not parameters['train_set_performance']:
-            parameters['train_set_performance'] = ''
-        if not parameters['dev_set_performance']:
-            parameters['dev_set_performance'] = ''
+        parameters['notes'] = json.dumps(parameters['notes'])
 
         with open(location, 'a') as csv_file:
             writer = csv.DictWriter(csv_file, fieldnames=self.CSV_FIELDS)
             writer.writerow(parameters)
 
-    def __ensure_directory_exists__(self, directory):
-        if os.path.exists(directory):
-            return
-
-        os.makedirs(directory)
-
     def __data_file_name__(self, id):
         return f"{id}.pytorch"
-
-    def __store_data__(self, data, subdirectory, id):
-        dir = os.path.join(self.directory, subdirectory)
-        self.__ensure_directory_exists__(dir)
-        location = os.path.join(dir, self.__data_file_name__(id))
-        torch.save(data, location)
-
-    def __fetch_data__(self, subdirectory, id):
-        location = os.path.join(self.directory, subdirectory, self.__data_file_name__(id))
-
-        load_options = {}
-
-        if self.all_onto_cpu:
-            load_options['map_location'] = {'cuda:0': 'cpu'}
-
-        return torch.load(location, **load_options)
 
     def any_exist(self):
         return len(self.list) > 0
@@ -151,7 +111,7 @@ class Accountant:
 
         return self.list[0]
 
-    def new_record(self, state_dict, notes=None, previous_checkpoint=None, train_set_performance=None, dev_set_performance=None, losses_since_last_checkpoint=None):
+    def new_record(self, state_dict_storage_id, id_of_previous_checkpoint=None, notes=None):
         # index
         indices = list(map(lambda x: x.id, self.list))
         highest_idx = max(indices) if len(indices) > 0 else -1
@@ -162,17 +122,11 @@ class Accountant:
 
         new_record = Record(
             id=idx,
-            previous_checkpoint=previous_checkpoint,
-            state_dict=state_dict,
-            train_set_performance=train_set_performance,
-            dev_set_performance=dev_set_performance,
-            losses_since_last_checkpoint=losses_since_last_checkpoint,
+            id_of_previous_checkpoint=id_of_previous_checkpoint,
+            state_dict_storage_id=state_dict_storage_id,
             notes=notes,
             created_at=created_at
         )
-
-        self.__store_data__(state_dict, NETWORK_PARAMETERS_SUBDIRECTORY, new_record.id)
-        self.__store_data__(losses_since_last_checkpoint, LOSSES_SUBDIRECTORY, new_record.id)
 
         self.__ensure_account_book_exists__()
         self.__append_record__(new_record, location=self.account_book)
@@ -180,21 +134,6 @@ class Accountant:
         self.__refresh_list__()
 
         return new_record
-
-    # def remove(self, record_id):
-    #     new_account_book_location = self.account_book + 'NEW'
-    #     self.__write_headers__(location=new_account_book_location)
-    #
-    #     for record in self.list:
-    #         if record.id == record_id:
-    #             continue
-    #
-    #         self.__append_record__(record, location=new_account_book_location)
-    #
-    #     os.remove(self.account_book)
-    #     os.rename(new_account_book_location, self.account_book)
-    #
-    #     self.__refresh_list__()
 
     def record_by_id(self, id):
         for record in self.list:
