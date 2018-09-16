@@ -13,7 +13,7 @@ class StateManager:
     def __init__(self, module, name=None, directory=None, load_onto_cpu=False):
         self.module = module
 
-        # Default the ´name´ to the name of the class the given module is an
+        # Default the name to the name of the class the given module is an
         # instance of.
         self.name = name if name else type(module).__name__
 
